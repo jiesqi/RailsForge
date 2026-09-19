@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: RailsForge developer toolkit API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: RailsForge overview and system information
+  - name: generators
+    description: Safe Rails resource generation
+  - name: database
+    description: Database inspection utilities
+  - name: jobs
+    description: Background job examples and status
 paths:
   /healthz:
     get:
@@ -24,6 +32,132 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard overview
+      responses:
+        "200":
+          description: Dashboard overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /system:
+    get:
+      operationId: getSystemInfo
+      tags: [dashboard]
+      summary: Get RailsForge system information
+      responses:
+        "200":
+          description: System information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemInfo"
+  /generators:
+    get:
+      operationId: listGenerators
+      tags: [generators]
+      summary: List available generators
+      responses:
+        "200":
+          description: Available generators
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Generator"
+  /generators/preview:
+    post:
+      operationId: previewGenerator
+      tags: [generators]
+      summary: Preview files a generator would create
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeneratorInput"
+      responses:
+        "200":
+          description: Generation preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationPreview"
+        "400":
+          description: Invalid generator input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /generators/generate:
+    post:
+      operationId: runGenerator
+      tags: [generators]
+      summary: Generate Rails resource files
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeneratorInput"
+      responses:
+        "200":
+          description: Generated files
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationResult"
+        "400":
+          description: Invalid generator input or file conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /database/health:
+    get:
+      operationId: getDatabaseHealth
+      tags: [database]
+      summary: Inspect database connectivity
+      responses:
+        "200":
+          description: Database health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatabaseHealth"
+  /database/tables:
+    get:
+      operationId: listDatabaseTables
+      tags: [database]
+      summary: List database tables
+      responses:
+        "200":
+          description: Database tables
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DatabaseTable"
+  /jobs:
+    get:
+      operationId: listJobs
+      tags: [jobs]
+      summary: List background job examples
+      responses:
+        "200":
+          description: Background job examples
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobExample"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +167,226 @@ components:
           type: string
       required:
         - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+      required: [error]
+    Dashboard:
+      type: object
+      properties:
+        version:
+          type: string
+        environment:
+          type: string
+        ruby:
+          type: string
+        rails:
+          type: string
+        database:
+          type: string
+        redis:
+          type: string
+        jobProcessor:
+          type: string
+        migrationStatus:
+          type: string
+        generatorCount:
+          type: integer
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/Activity"
+      required:
+        - version
+        - environment
+        - ruby
+        - rails
+        - database
+        - redis
+        - jobProcessor
+        - migrationStatus
+        - generatorCount
+        - recentActivity
+    Activity:
+      type: object
+      properties:
+        id:
+          type: string
+        operation:
+          type: string
+        status:
+          type: string
+        detail:
+          type: string
+        occurredAt:
+          type: string
+      required: [id, operation, status, detail, occurredAt]
+    SystemInfo:
+      type: object
+      properties:
+        version:
+          type: string
+        ruby:
+          type: string
+        rails:
+          type: string
+        node:
+          type: string
+        databaseAdapter:
+          type: string
+        databaseStatus:
+          type: string
+        redisStatus:
+          type: string
+        jobAdapter:
+          type: string
+        environment:
+          type: string
+        platform:
+          type: string
+      required:
+        - version
+        - ruby
+        - rails
+        - node
+        - databaseAdapter
+        - databaseStatus
+        - redisStatus
+        - jobAdapter
+        - environment
+        - platform
+    Generator:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        output:
+          type: string
+      required: [id, name, description, status, output]
+    GeneratorField:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum: [string, text, integer, decimal, boolean, date, datetime]
+      required: [name, type]
+    GeneratorInput:
+      type: object
+      properties:
+        resourceName:
+          type: string
+          minLength: 2
+          pattern: "^[A-Za-z][A-Za-z0-9_]*$"
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/GeneratorField"
+        crud:
+          type: boolean
+        namespace:
+          type: string
+          pattern: "^[A-Za-z][A-Za-z0-9:]*$"
+        timestamps:
+          type: boolean
+      required: [resourceName, fields, crud, namespace, timestamps]
+    GeneratedFile:
+      type: object
+      properties:
+        path:
+          type: string
+        action:
+          type: string
+          enum: [create, modify, conflict]
+        content:
+          type: string
+      required: [path, action, content]
+    GenerationPreview:
+      type: object
+      properties:
+        resourceName:
+          type: string
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/GeneratedFile"
+        migration:
+          type: string
+        routes:
+          type: string
+        warnings:
+          type: array
+          items:
+            type: string
+      required: [resourceName, files, migration, routes, warnings]
+    GenerationResult:
+      type: object
+      properties:
+        generated:
+          type: boolean
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/GeneratedFile"
+        activity:
+          $ref: "#/components/schemas/Activity"
+      required: [generated, files, activity]
+    DatabaseHealth:
+      type: object
+      properties:
+        status:
+          type: string
+        adapter:
+          type: string
+        database:
+          type: string
+        host:
+          type: string
+        port:
+          type: integer
+        environment:
+          type: string
+        tables:
+          type: integer
+      required: [status, adapter, database, host, port, environment, tables]
+    DatabaseTable:
+      type: object
+      properties:
+        name:
+          type: string
+        rows:
+          type: integer
+        size:
+          type: string
+        indexes:
+          type: integer
+      required: [name, rows, size, indexes]
+    JobExample:
+      type: object
+      properties:
+        name:
+          type: string
+        queue:
+          type: string
+        retries:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+      required: [name, queue, retries, description, status]
 

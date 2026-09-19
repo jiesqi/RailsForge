@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "RailsForge"
+description = "A serious developer toolkit for generating Rails resources, inspecting project health, and managing background-job utilities from one focused dashboard."
+version = "1.0.0"
+id = "artifacts/railsforge"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21213
+
+[services.development]
+run = "pnpm --filter @workspace/railsforge run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/railsforge", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/railsforge/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21213"
+BASE_PATH = "/"

@@ -1,0 +1,1 @@
+- [RailsForge generation safety](railsforge-safety.md) — keep Rails output staged and preview-first; never silently overwrite project files.
